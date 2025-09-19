@@ -20,14 +20,33 @@ async function deepResearch(query, contextData) {
     body: JSON.stringify({
       model: "deepseek/deepseek-chat-v3.1:free",
       messages: [
-        { role: "system", content: "Você é um analista de dados especializado em identificar tendências em tempo real. Organize as informações e destaque padrões relevantes." },
-        { role: "user", content: `Tema pesquisado: ${query}\n\nDados coletados:\n${JSON.stringify(contextData, null, 2)}\n\nResuma os principais tópicos, tendências emergentes e potenciais insights de marketing e conteúdo.` }
+        { 
+          role: "system", 
+          content: "Você é um analista de dados especializado em identificar tendências em tempo real. Organize as informações e destaque padrões relevantes. Além da análise, gere termos relacionados relevantes para pesquisas adicionais." 
+        },
+        { 
+          role: "user", 
+          content: `Tema pesquisado: ${query}\n\nDados coletados:\n${JSON.stringify(contextData, null, 2)}\n\nPor favor, forneça:\n1. Resumo dos principais tópicos e tendências emergentes\n2. Insights de marketing e conteúdo\n3. Lista de 5-8 termos relacionados relevantes para pesquisas adicionais (IMPORTANTE: separe esta lista com o marcador [TERMOS_RELACIONADOS] no início e [/TERMOS_RELACIONADOS] no fim)`
+        }
       ]
     })
   });
 
   const json = await res.json();
-  return json.choices?.[0]?.message?.content || "Sem resposta do modelo.";
+  const content = json.choices?.[0]?.message?.content || "Sem resposta do modelo.";
+  
+  // Extrair termos relacionados
+  const termsMatch = content.match(/\[TERMOS_RELACIONADOS\]([\s\S]*?)\[\/TERMOS_RELACIONADOS\]/);
+  const termsText = termsMatch ? termsMatch[1].trim() : "";
+  const relatedTerms = termsText
+    .split('\n')
+    .map(term => term.replace(/^[-•*]\s*/, '').trim())
+    .filter(term => term);
+
+  return {
+    analysis: content.replace(/\[TERMOS_RELACIONADOS\][\s\S]*?\[\/TERMOS_RELACIONADOS\]/, '').trim(),
+    relatedTerms
+  };
 }
 
 // 🔹 Página de teste rápida (preview na lousa)
@@ -45,21 +64,107 @@ app.get("/", (req, res) => {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
           }
-          body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(120deg,#f6f8fa 60%,#e3f2fd 100%); margin: 0; padding: 0; }
-          .container { max-width: 520px; margin: 60px auto; background: #fff; border-radius: 18px; box-shadow: 0 4px 32px #0002; padding: 48px 38px; transition: box-shadow 0.3s; animation: fadeIn 1.2s; }
-          .container:hover { box-shadow: 0 8px 40px #1a73e820; }
-          h1 { text-align: center; color: #1a73e8; margin-bottom: 32px; font-size:2.1em; letter-spacing: 1px; }
-          form { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
-          input[type=text] { flex: 1; padding: 16px; border-radius: 10px; border: 1.5px solid #bdbdbd; font-size: 1.15em; transition: border 0.2s; }
-          input[type=text]:focus { border: 1.5px solid #1a73e8; outline: none; }
-          button { background: #1a73e8; color: #fff; border: none; border-radius: 10px; padding: 16px 32px; font-size: 1.15em; cursor: pointer; transition: background 0.2s, transform 0.2s; font-weight: 500; }
-          button:hover { background: #155ab6; transform: scale(1.04); }
-          .footer { text-align: center; margin-top: 40px; color: #888; font-size: 1em; }
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+          }
+          body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: #ffffff; 
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          .container { 
+            max-width: 560px; 
+            width: 90%; 
+            margin: 20px auto; 
+            background: #ffffff; 
+            border-radius: 24px; 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); 
+            padding: 48px 42px; 
+            transition: all 0.3s ease;
+            animation: fadeIn 1.2s;
+          }
+          .container:hover { 
+            box-shadow: 0 15px 50px rgba(220, 38, 38, 0.12); 
+          }
+          h1 { 
+            text-align: center; 
+            color: #dc2626; 
+            margin-bottom: 36px; 
+            font-size: 2.4em; 
+            letter-spacing: -0.5px;
+            font-weight: 700;
+            animation: pulse 2s infinite;
+          }
+          form { 
+            display: flex; 
+            gap: 12px; 
+            justify-content: center; 
+            margin-bottom: 16px; 
+          }
+          input[type=text] { 
+            flex: 1; 
+            padding: 18px 24px; 
+            border-radius: 16px; 
+            border: 2px solid #f3f4f6; 
+            font-size: 1.15em; 
+            transition: all 0.3s ease;
+            background: #f8fafc;
+          }
+          input[type=text]:focus { 
+            border-color: #dc2626; 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+            background: #ffffff;
+          }
+          button { 
+            background: #dc2626; 
+            color: #fff; 
+            border: none; 
+            border-radius: 16px; 
+            padding: 18px 36px; 
+            font-size: 1.15em; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            font-weight: 600;
+            letter-spacing: 0.3px;
+          }
+          button:hover { 
+            background: #b91c1c; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+          }
+          button:active {
+            transform: translateY(0);
+          }
+          .footer { 
+            text-align: center; 
+            margin-top: 40px; 
+            color: #6b7280; 
+            font-size: 1.05em;
+            font-weight: 500;
+          }
           .loader {
-            display: none; justify-content: center; align-items: center; height: 80px; margin-top: 30px;
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            height: 80px; 
+            margin-top: 30px;
           }
           .spinner {
-            border: 7px solid #e3f2fd; border-top: 7px solid #1a73e8; border-radius: 50%; width: 54px; height: 54px; animation: spin 1s linear infinite;
+            border: 6px solid #fee2e2; 
+            border-top: 6px solid #dc2626; 
+            border-radius: 50%; 
+            width: 50px; 
+            height: 50px; 
+            animation: spin 1s linear infinite;
           }
         </style>
       </head>
@@ -172,7 +277,9 @@ app.get("/monitor", async (req, res) => {
     noticias: todasNoticias
   };
 
-  const resumoIA = await deepResearch(termo, dadosPesquisa);
+  const resultado = await deepResearch(termo, dadosPesquisa);
+  const resumoIA = resultado.analysis;
+  const termosRelacionados = resultado.relatedTerms;
 
   // Identifica autores/fonte
   const autores = Array.from(new Set(todasNoticias.map(n => n.fonte).filter(Boolean)));
@@ -208,20 +315,176 @@ app.get("/monitor", async (req, res) => {
         <title>Resultado - ${termo}</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
-          body { font-family: Arial, sans-serif; background: #f6f8fa; margin: 0; padding: 0; }
-          .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 16px #0001; padding: 32px; }
-          h1 { color: #1a73e8; margin-bottom: 16px; }
-          .resumo { background: #e3f2fd; border-radius: 8px; padding: 18px; margin-bottom: 24px; font-size: 1.15em; }
-          .cards { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 24px; }
-          .card { background: #f9fafb; border-radius: 8px; box-shadow: 0 1px 6px #0001; padding: 16px; flex: 1 1 240px; min-width: 220px; }
-          .card h3 { margin: 0 0 8px 0; font-size: 1.08em; color: #333; }
-          .card a { color: #1a73e8; text-decoration: none; }
-          .card a:hover { text-decoration: underline; }
-          .section-title { margin-top: 24px; color: #155ab6; font-size: 1.1em; }
-          .back { display: inline-block; margin-top: 24px; color: #1a73e8; text-decoration: none; font-weight: bold; }
-          .back:hover { text-decoration: underline; }
-          .autores { margin-bottom: 24px; background: #f1f8e9; border-radius: 8px; padding: 12px; }
-          .trends { margin-bottom: 24px; background: #fffde7; border-radius: 8px; padding: 12px; }
+          body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #ffffff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+          }
+          .container { 
+            max-width: 1200px; 
+            margin: 20px auto; 
+            background: #ffffff; 
+            border-radius: 24px; 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); 
+            padding: 42px; 
+          }
+          h1 { 
+            color: #dc2626; 
+            margin-bottom: 28px;
+            font-size: 2.2em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+          }
+          .resumo { 
+            background: #fef2f2; 
+            border-radius: 20px; 
+            padding: 28px; 
+            margin-bottom: 32px; 
+            font-size: 1.15em;
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.08);
+            border: 1px solid #fee2e2;
+          }
+          .cards { 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+          }
+          .card { 
+            background: #ffffff; 
+            border-radius: 20px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); 
+            padding: 24px;
+            transition: all 0.3s ease;
+            border: 1px solid #f3f4f6;
+          }
+          .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(220, 38, 38, 0.12);
+          }
+          .card h3 { 
+            margin: 0 0 12px 0; 
+            font-size: 1.2em; 
+            color: #111827;
+            font-weight: 600;
+          }
+          .card a { 
+            color: #dc2626; 
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+          }
+          .card a:hover { 
+            color: #b91c1c;
+            transform: translateX(4px);
+          }
+          .section-title { 
+            margin-top: 32px; 
+            color: #dc2626; 
+            font-size: 1.3em;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+          }
+          .back { 
+            display: inline-flex;
+            align-items: center;
+            margin-top: 32px; 
+            color: #dc2626; 
+            text-decoration: none; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            padding: 12px 24px;
+            background: #fef2f2;
+            border-radius: 12px;
+          }
+          .back:hover { 
+            background: #fee2e2;
+            transform: translateX(-4px);
+          }
+          .autores { 
+            margin-bottom: 32px; 
+            background: #f8fafc; 
+            border-radius: 20px; 
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+          }
+          .trends { 
+            margin-bottom: 32px; 
+            background: #f8fafc; 
+            border-radius: 20px; 
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+            animation: scaleIn 0.6s ease-out;
+          }
+          
+          .chart-container {
+            max-height: 400px;
+            margin: 15px 0;
+          }
+          
+          .related-terms {
+            margin: 32px 0;
+            padding: 24px;
+            background: #fef2f2;
+            border-radius: 20px;
+            border: 1px solid #fee2e2;
+            animation: slideUp 0.8s ease-out;
+          }
+          
+          .terms-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+          }
+          
+          .term-chip {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #ffffff;
+            border: 1px solid #fee2e2;
+            border-radius: 100px;
+            color: #dc2626;
+            text-decoration: none;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            animation: scaleIn 0.5s ease-out backwards;
+          }
+          
+          .term-chip:hover {
+            background: #dc2626;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+          }
+          
+          .resumo, .autores, .trends, .cards {
+            animation: slideUp 0.6s ease-out backwards;
+          }
+          
+          .card {
+            animation: scaleIn 0.5s ease-out backwards;
+          }
+          
+          .cards .card:nth-child(1) { animation-delay: 0.1s; }
+          .cards .card:nth-child(2) { animation-delay: 0.2s; }
+          .cards .card:nth-child(3) { animation-delay: 0.3s; }
+          .cards .card:nth-child(4) { animation-delay: 0.4s; }
+          .cards .card:nth-child(5) { animation-delay: 0.5s; }
+          
+          .term-chip:nth-child(1) { animation-delay: 0.2s; }
+          .term-chip:nth-child(2) { animation-delay: 0.3s; }
+          .term-chip:nth-child(3) { animation-delay: 0.4s; }
+          .term-chip:nth-child(4) { animation-delay: 0.5s; }
+          .term-chip:nth-child(5) { animation-delay: 0.6s; }
+          .term-chip:nth-child(6) { animation-delay: 0.7s; }
+          .term-chip:nth-child(7) { animation-delay: 0.8s; }
+          .term-chip:nth-child(8) { animation-delay: 0.9s; }
         </style>
       </head>
       <body>
@@ -248,12 +511,29 @@ app.get("/monitor", async (req, res) => {
           </div>
           <div class="trends">
             <b>🔝 Tendências Google (últimos dias):</b><br>
-            <canvas id="trendsChart" width="700" height="220"></canvas>
-            <div id="trendInfo" style="margin-top:12px;font-size:1.05em;color:#155ab6;"></div>
+            <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+              <canvas id="trendsChart"></canvas>
+            </div>
+            <div id="trendInfo" style="margin-top:12px;font-size:1.05em;color:#dc2626;"></div>
             <div style="margin-top:8px;font-size:0.98em;color:#444;">
-              <span style="background:#e3f2fd;padding:4px 8px;border-radius:6px;">Quanto maior o valor, maior o interesse pelo termo pesquisado.</span>
+              <span style="background:#fef2f2;padding:6px 12px;border-radius:8px;display:inline-block;">
+                Quanto maior o valor, maior o interesse pelo termo pesquisado
+              </span>
             </div>
           </div>
+          
+          ${termosRelacionados.length ? `
+          <div class="related-terms">
+            <b>🔍 Termos Relacionados Sugeridos:</b>
+            <div class="terms-grid">
+              ${termosRelacionados.map(termo => `
+                <a href="?q=${encodeURIComponent(termo)}" class="term-chip">
+                  ${termo}
+                </a>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
           <div class="section-title">�📰 Notícias Recentes</div>
           <div class="cards" style="animation: fadeIn 1.2s;">
             ${todasNoticias.length ? todasNoticias.map(n => `
@@ -330,23 +610,87 @@ app.get("/monitor", async (req, res) => {
                 datasets: [{
                   label: 'Popularidade do termo: ' + tendencias[0].termo,
                   data: tendencias.map(t => t.valor),
-                  borderColor: '#1a73e8',
-                  backgroundColor: 'rgba(26,115,232,0.1)',
+                  borderColor: '#dc2626',
+                  backgroundColor: 'rgba(220, 38, 38, 0.1)',
                   fill: true,
-                  tension: 0.3,
-                  pointBackgroundColor: tendencias.map(function(t,i){return i===maxIdx ? '#e53935' : '#1a73e8'}),
-                  pointRadius: tendencias.map(function(t,i){return i===maxIdx ? 7 : 4}),
-                  pointHoverRadius: 9,
-                  borderWidth: 3
+                  tension: 0.4,
+                  pointBackgroundColor: tendencias.map(function(t,i){
+                    return i===maxIdx ? '#991b1b' : '#dc2626'
+                  }),
+                  pointRadius: tendencias.map(function(t,i){
+                    return i===maxIdx ? 8 : 5
+                  }),
+                  pointHoverRadius: 10,
+                  borderWidth: 3,
+                  pointStyle: 'circle',
+                  pointBorderColor: '#ffffff',
+                  pointBorderWidth: 2,
+                  pointShadowColor: 'rgba(0,0,0,0.2)',
+                  pointShadowBlur: 5,
+                  lineTension: 0.4
                 }]
               },
               options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                  padding: {
+                    top: 10,
+                    right: 20,
+                    bottom: 10,
+                    left: 10
+                  }
+                },
                 scales: {
-                  y: { beginAtZero: true }
+                  y: { 
+                    beginAtZero: true,
+                    grid: {
+                      color: 'rgba(0,0,0,0.05)',
+                      borderDash: [5,5]
+                    },
+                    ticks: {
+                      font: {
+                        family: "'Segoe UI', system-ui, -apple-system, sans-serif",
+                        size: 12
+                      },
+                      color: '#64748b',
+                      maxTicksLimit: 8
+                    }
+                  },
+                  x: {
+                    grid: {
+                      display: false
+                    },
+                    ticks: {
+                      font: {
+                        family: "'Segoe UI', system-ui, -apple-system, sans-serif",
+                        size: 12
+                      },
+                      color: '#64748b'
+                    }
+                  }
                 },
                 plugins: {
-                  legend: { display: true, labels: { color: '#1a73e8', font: { size: 14 } } },
+                  legend: { 
+                    display: true, 
+                    labels: { 
+                      color: '#dc2626', 
+                      font: { 
+                        size: 14,
+                        family: "'Segoe UI', system-ui, -apple-system, sans-serif",
+                        weight: '600'
+                      } 
+                    } 
+                  },
                   tooltip: {
+                    backgroundColor: 'rgba(255,255,255,0.98)',
+                    titleColor: '#111827',
+                    bodyColor: '#374151',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    padding: 12,
+                    cornerRadius: 8,
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                     callbacks: {
                       title: function(context) {
                         return 'Data: ' + context[0].label;
@@ -358,8 +702,12 @@ app.get("/monitor", async (req, res) => {
                   }
                 },
                 animation: {
-                  duration: 1200,
-                  easing: 'easeOutBounce'
+                  duration: 1500,
+                  easing: 'easeInOutQuart'
+                },
+                interaction: {
+                  intersect: false,
+                  mode: 'index'
                 }
               }
             });
