@@ -1,7 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import googleTrends from "google-trends-api";
-import db from "./db.js";
+import db from "../../db.js";
 
 const app = express();
 const PORT = 3000;
